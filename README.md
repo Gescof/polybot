@@ -78,19 +78,25 @@ cp .env.example .env
 # At minimum, set POLYMARKET_TARGET_USER to analyze
 ```
 
-### 2. Start Infrastructure
+### 2. Start All Services with Docker (Recommended)
 
 ```bash
-# Start ClickHouse and Kafka
-docker-compose -f docker-compose.analytics.yaml up -d
+# Start all infrastructure and application services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
 
 # Optional: Start monitoring stack
 docker-compose -f docker-compose.monitoring.yaml up -d
 ```
 
-### 3. Build and Run Services
+**OR** Start Infrastructure Only and Run Services Locally:
 
 ```bash
+# Start ClickHouse and Kafka only
+docker-compose -f docker-compose.analytics.yaml up -d
+
 # Build all services
 mvn clean package -DskipTests
 
@@ -102,6 +108,17 @@ cd strategy-service && mvn spring-boot:run -Dspring-boot.run.profiles=develop
 
 # Start ingestor (in another terminal) - ingests target user's trades
 cd ingestor-service && mvn spring-boot:run -Dspring-boot.run.profiles=develop
+```
+
+### 3. Verify Services
+
+All services expose health endpoints:
+```bash
+# Check service health
+curl http://localhost:8080/actuator/health  # executor-service
+curl http://localhost:8081/actuator/health  # strategy-service
+curl http://localhost:8082/actuator/health  # analytics-service
+curl http://localhost:8083/actuator/health  # ingestor-service
 ```
 
 ### 4. Research & Analysis
@@ -136,6 +153,8 @@ python sim_trade_match_report.py
 | `ANALYTICS_DB_URL` | ClickHouse connection | For analytics |
 
 See [.env.example](.env.example) for complete configuration reference.
+
+For detailed Docker usage and troubleshooting, see [DOCKER.md](docs/DOCKER.md).
 
 ### Trading Modes
 

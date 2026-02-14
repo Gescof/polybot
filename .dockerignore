@@ -1,0 +1,64 @@
+# .dockerignore - Files and directories to exclude from Docker build context
+# This significantly reduces build time and image size
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build artifacts
+**/target/
+**/build/
+**/*.jar
+!**/target/*.jar
+**/*.war
+**/*.ear
+
+# Logs
+**/logs/
+**/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+docker-compose*.yml
+docker-compose*.yaml
+Dockerfile*
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# Python/Research
+research/
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.pytest_cache/
+
+# Monitoring configs
+monitoring/
+
+# Scripts (exclude bash/PowerShell helper scripts)
+scripts/
+start-all-services.sh
+stop-all-services.sh
+start-services.sh
+start-services.ps1
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

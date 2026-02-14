@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${ANALYTICS_DB_URL:jdbc:clickhouse://localhost:8123/polybot}
+    driver-class-name: ${ANALYTICS_DB_DRIVER:com.clickhouse.jdbc.ClickHouseDriver}
+    username: ${ANALYTICS_DB_USERNAME:default}
+    password: ${ANALYTICS_DB_PASSWORD:}
+    hikari:
+      initialization-fail-timeout: -1
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000

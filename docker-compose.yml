@@ -1,0 +1,193 @@
+name: polybot
+
+services:
+  # Infrastructure Services
+  redpanda:
+    image: redpandadata/redpanda:v24.2.11
+    container_name: polybot-redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - INTERNAL://redpanda:29092,EXTERNAL://localhost:9092
+    ports:
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9644:9644"
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: polybot-clickhouse
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - ./analytics-service/clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - ./analytics-service/clickhouse/users.d/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
+      - polybot_chdata:/var/lib/clickhouse
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application Services
+  executor-service:
+    build:
+      context: .
+      dockerfile: executor-service/Dockerfile
+    container_name: polybot-executor-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-develop}
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+      - HFT_MODE=${HFT_MODE:-PAPER}
+      - POLYMARKET_PRIVATE_KEY=${POLYMARKET_PRIVATE_KEY:-}
+      - POLYMARKET_SIGNATURE_TYPE=${POLYMARKET_SIGNATURE_TYPE:-0}
+      - POLYMARKET_FUNDER_ADDRESS=${POLYMARKET_FUNDER_ADDRESS:-}
+      - POLYMARKET_API_KEY=${POLYMARKET_API_KEY:-}
+      - POLYMARKET_API_SECRET=${POLYMARKET_API_SECRET:-}
+      - POLYMARKET_API_PASSPHRASE=${POLYMARKET_API_PASSPHRASE:-}
+      - POLYMARKET_API_NONCE=${POLYMARKET_API_NONCE:-0}
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  strategy-service:
+    build:
+      context: .
+      dockerfile: strategy-service/Dockerfile
+    container_name: polybot-strategy-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-develop}
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: polybot-analytics-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-develop}
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+      - HFT_MODE=${HFT_MODE:-PAPER}
+      - ANALYTICS_DB_URL=jdbc:clickhouse://clickhouse:8123/polybot
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  ingestor-service:
+    build:
+      context: .
+      dockerfile: ingestor-service/Dockerfile
+    container_name: polybot-ingestor-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-develop}
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+      - HFT_MODE=${HFT_MODE:-PAPER}
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  infrastructure-orchestrator-service:
+    build:
+      context: .
+      dockerfile: infrastructure-orchestrator-service/Dockerfile
+    container_name: polybot-infrastructure-orchestrator-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-develop}
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
+    networks:
+      - polybot-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    profiles:
+      - with-orchestrator  # Optional service - enable with: docker-compose --profile with-orchestrator up
+
+volumes:
+  polybot_chdata:
+
+networks:
+  polybot-network:
+    driver: bridge

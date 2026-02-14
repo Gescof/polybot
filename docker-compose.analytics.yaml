@@ -1,5 +1,12 @@
 name: polybot
 
+# DEPRECATED: Use docker-compose.yml instead
+# This file is kept for backward compatibility but docker-compose.yml
+# now includes all infrastructure services along with application services.
+# 
+# To start all services: docker-compose up -d
+# To start only infrastructure: docker-compose up -d redpanda clickhouse
+
 services:
   redpanda:
     image: redpandadata/redpanda:v24.2.11

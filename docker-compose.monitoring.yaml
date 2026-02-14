@@ -1,5 +1,9 @@
 version: '3.8'
 
+# Monitoring stack for Polybot services
+# Usage: docker-compose -f docker-compose.monitoring.yaml up -d
+# This connects to the polybot-network to scrape metrics from application services
+
 services:
   prometheus:
     image: prom/prometheus:v2.48.0
@@ -18,6 +22,7 @@ services:
     restart: unless-stopped
     networks:
       - polybot-monitoring
+      - polybot_polybot-network  # Connect to app network to scrape metrics
 
   grafana:
     image: grafana/grafana:10.2.2
@@ -37,6 +42,7 @@ services:
       - prometheus
     networks:
       - polybot-monitoring
+      - polybot_polybot-network  # Connect to app network
 
   alertmanager:
     image: prom/alertmanager:v0.26.0
@@ -80,3 +86,6 @@ volumes:
 networks:
   polybot-monitoring:
     driver: bridge
+  polybot_polybot-network:
+    external: true  # Use the network from docker-compose.yml
+
