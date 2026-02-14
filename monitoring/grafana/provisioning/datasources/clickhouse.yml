@@ -1,0 +1,18 @@
+# Grafana Datasource Provisioning - ClickHouse
+# Provides access to raw trading analytics data
+
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    url: http://clickhouse:8123
+    editable: true
+    jsonData:
+      defaultDatabase: polybot
+      port: 8123
+      protocol: http
+      username: default
+    secureJsonData:
+      password: ""

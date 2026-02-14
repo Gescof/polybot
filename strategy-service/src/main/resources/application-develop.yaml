@@ -5,8 +5,8 @@ hft:
     market-ws-snapshot-publish-millis: 1000
     market-ws-cache-publish-on-start: true
   executor:
-    base-url: http://localhost:8080
-    send-live-ack: false
+    base-url: http://executor-service:8080
+    send-live-ack: true
   polymarket:
     market-ws-enabled: true
     gamma-url: https://gamma-api.polymarket.com

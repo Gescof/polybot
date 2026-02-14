@@ -6,7 +6,7 @@ hft:
     market-ws-enabled: true
     auth:
       private-key: ""
-      auto-create-or-derive-api-creds: false
+      auto-create-or-derive-api-creds: true
 
 logging:
   level:
@@ -15,7 +15,7 @@ logging:
 
 executor:
   sim:
-    enabled: true
+    enabled: false
     fills-enabled: true
     fill-poll-millis: 500
     maker-fill-probability-per-poll: 0.01
@@ -25,11 +25,11 @@ executor:
 
   onchain:
     rpc-url: ${POLYGON_RPC_URL:https://polygon-rpc.com}
-    proxy-wallet-factory-address: ""
+    proxy-wallet-factory-address: "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
 
   settlement:
-    enabled: false
-    dry-run: true
+    enabled: true
+    dry-run: false
     poll-interval-millis: 30000
     min-merge-shares: 10
     max-retries: 3
